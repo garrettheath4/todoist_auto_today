@@ -48,8 +48,9 @@ def set_task_due_today(task: dict, today_date: date) -> None:
         f"{API_BASE}/tasks/{task['id']}",
         headers=HEADERS,
         json={
-            "due_date": today_date.isoformat(),
-            **({"due_string": task["due"]["string"]} if task["due"] and task["due"]["string"] else {}),
+            **({"due_string": task["due"]["string"]}
+               if task["due"] and isinstance(task["due"]["string"], str) and task["due"]["is_recurring"]
+               else {"due_date": today_date.isoformat()}),
         },
     )
     if post.status_code != 200:
