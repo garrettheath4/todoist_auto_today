@@ -34,15 +34,26 @@ def get_tasks_with_label(label: str) -> list[dict]:
     return resp.json()
 
 
-def set_task_due_today(task_id: str, today_date: date) -> None:
-    """Set a task's due date to today (ISO format)."""
+def set_task_due_today(task: dict, today_date: date) -> None:
+    """
+    Set a task's due date to today (ISO format).
+
+    Example task dict::
+       {'id': '9722671294', 'project_id': '1490560962', 'content': 'Recurring task', 'description': '',
+        'is_completed': False, 'labels': ['today'], 'priority': 1, 'created_at': '2025-11-11T04:36:20.496387Z',
+        'due': {'date': '2025-11-09', 'string': 'every day', 'lang': 'en', 'is_recurring': True},
+        'url': 'https://app.todoist.com/app/task/9722671294', 'duration': None, 'deadline': None}
+    """
     post = requests.post(
-        f"{API_BASE}/tasks/{task_id}",
+        f"{API_BASE}/tasks/{task['id']}",
         headers=HEADERS,
-        json={"due_date": today_date.isoformat()},
+        json={
+            "due_date": today_date.isoformat(),
+            **({"due_string": task["due"]["string"]} if task["due"] and task["due"]["string"] else {}),
+        },
     )
     if post.status_code != 200:
-        logging.error(f"Failed to update task %s: %s", task_id, post.text)
+        logging.error(f"Failed to update task %s: %s", task["id"], post.text)
 
 
 def main():
@@ -55,7 +66,8 @@ def main():
     today_date = datetime.now(ZoneInfo(CURRENT_TIME_ZONE)).date()
     logging.info(f"Found %d tasks. Updating due dates to today (%s)…", len(tasks), today_date.isoformat())
     for task in tasks:
-        set_task_due_today(task["id"], today_date)
+        logging.debug("Updating task: %s", task)
+        set_task_due_today(task, today_date)
         logging.debug(f"Updated: %s", task['content'])
 
     logging.info("Done.")
