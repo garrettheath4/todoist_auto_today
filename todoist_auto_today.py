@@ -2,7 +2,7 @@
 """
 todoist_today_scheduler.py
 ----------------------------------------
-Sets all Todoist tasks with the '@today' label to be due today.
+Sets all Todoist overdue tasks with the '@today' label to be due today.
 Requires a Todoist REST API token in the environment variable TODOIST_TOKEN.
 
 Required Packages:
@@ -27,9 +27,9 @@ if not TOKEN:
 HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
 
 
-def get_tasks_with_label(label: str) -> list[dict]:
-    """Fetch all tasks containing the given label ID."""
-    resp = requests.get(f"{API_BASE}/tasks", headers=HEADERS, params={"label": label})
+def get_overdue_tasks_with_label(label: str) -> list[dict]:
+    """Fetch all overdue tasks containing the given label ID."""
+    resp = requests.get(f"{API_BASE}/tasks/filter", headers=HEADERS, params={"query": f"@{label} & overdue"})
     resp.raise_for_status()
     resp_dict = resp.json()
     if "results" in resp_dict:
@@ -62,14 +62,14 @@ def set_task_due_today(task: dict, today_date: date) -> None:
 
 
 def main():
-    logging.debug("Fetching tasks with @today label…")
-    tasks = get_tasks_with_label("today")
+    logging.debug("Fetching overdue tasks with @today label…")
+    tasks = get_overdue_tasks_with_label("today")
     if not tasks:
-        logging.warning("No tasks found with the @today label.")
+        logging.warning("No overdue tasks found with the @today label.")
         return
 
     today_date = datetime.now(ZoneInfo(CURRENT_TIME_ZONE)).date()
-    logging.info(f"Found %d tasks. Updating due dates to today (%s)…", len(tasks), today_date.isoformat())
+    logging.info(f"Found %d overdue tasks. Updating due dates to today (%s)…", len(tasks), today_date.isoformat())
     for task in tasks:
         logging.debug("Updating task: %s", task)
         set_task_due_today(task, today_date)
