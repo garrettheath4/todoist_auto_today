@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-API_BASE = "https://api.todoist.com/rest/v2"
+API_BASE = "https://api.todoist.com/api/v1"
 TOKEN = os.environ.get("TODOIST_TOKEN")
 CURRENT_TIME_ZONE = os.environ.get("TZ", "America/New_York")
 
@@ -31,7 +31,11 @@ def get_tasks_with_label(label: str) -> list[dict]:
     """Fetch all tasks containing the given label ID."""
     resp = requests.get(f"{API_BASE}/tasks", headers=HEADERS, params={"label": label})
     resp.raise_for_status()
-    return resp.json()
+    resp_dict = resp.json()
+    if "results" in resp_dict:
+        return resp_dict["results"]
+    else:
+        raise ValueError(f"Unexpected response from Todoist: {resp_dict}")
 
 
 def set_task_due_today(task: dict, today_date: date) -> None:
